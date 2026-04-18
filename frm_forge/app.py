@@ -175,7 +175,8 @@ def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dic
                 f'<span class="frm-status {tone("ok" if entry.get("IsOn") else "warn")}">{("On" if entry.get("IsOn") else "Off")}</span>'
                 f'</div><div class="frm-caption" style="margin-top:8px">Priority {entry.get("Priority", -1)}</div></div>'
             )
-        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{"".join(rows) or "<div class=\\"frm-caption\\">No switches.</div>"}</div></div>'
+        body = "".join(rows) or '<div class="frm-caption">No switches.</div>'
+        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{body}</div></div>'
     if kind == "factory_pulse":
         rows = []
         for machine in snapshot.get("factory", [])[:5]:
@@ -186,7 +187,8 @@ def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dic
                 f'<span class="frm-status {tone(level)}">{escape(label)}</span></div>'
                 f'<div class="frm-caption" style="margin-top:8px">{escape(machine.get("Recipe") or machine.get("ClassName") or "")}</div></div>'
             )
-        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{"".join(rows) or "<div class=\\"frm-caption\\">No machines.</div>"}</div></div>'
+        body = "".join(rows) or '<div class="frm-caption">No machines.</div>'
+        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{body}</div></div>'
     if kind == "automation_feed":
         rows = []
         for event in events[:5]:
@@ -195,7 +197,8 @@ def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dic
                 f'<strong>{escape(event.title)}</strong><span class="frm-status {tone(event.level)}">{escape(event.level)}</span></div>'
                 f'<div class="frm-caption" style="margin-top:8px">{escape(event.detail)}</div></div>'
             )
-        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{"".join(rows) or "<div class=\\"frm-caption\\">No automation runs yet.</div>"}</div></div>'
+        body = "".join(rows) or '<div class="frm-caption">No automation runs yet.</div>'
+        return f'<div class="frm-card"><div style="font-weight:700">{escape(title)}</div><div style="display:grid;gap:12px;margin-top:12px">{body}</div></div>'
     if kind == "machine_detail":
         target_id = widget.config_json.get("object_id")
         machine = next((entry for entry in snapshot.get("factory", []) if entry.get("ID") == target_id), None)
