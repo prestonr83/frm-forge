@@ -19,3 +19,6 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["frm_forge*"]
+
+[tool.setuptools.package-data]
+frm_forge = ["static/*"]

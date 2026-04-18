@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from html import escape
+from pathlib import Path
 from typing import Any
 
-from nicegui import ui
+from nicegui import app, ui
 
 from .automation import AutomationService
 from .config import get_settings
@@ -46,11 +47,15 @@ frm_client = FRMClient()
 snapshot_service = SnapshotService(frm_client)
 automation_service = AutomationService(snapshot_service, frm_client)
 services_started = False
+STATIC_DIR = Path(__file__).with_name("static")
+
+if STATIC_DIR.exists():
+    app.add_static_files("/assets", str(STATIC_DIR))
 
 WIDGET_CATALOG = {
     "session_pulse": "Session Pulse",
     "power_trend": "Power Trend",
-    "production_flow": "Production Flow",
+    "production_flow": "Throughput Board",
     "switchboard": "Switchboard",
     "factory_pulse": "Factory Pulse",
     "automation_feed": "Automation Feed",
@@ -126,6 +131,14 @@ def day_labels(days: list[int] | None) -> str:
     return ", ".join(labels) or "No days"
 
 
+def production_detail(entry: dict[str, Any]) -> str:
+    current = float(entry.get("CurrentProd", 0) or 0)
+    maximum = float(entry.get("MaxProd", 0) or 0)
+    if maximum > 0:
+        return f"Max {format_rate(maximum)} | {format_percent((current / maximum) * 100)} of cap"
+    return f"Current {format_rate(current)}"
+
+
 def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dict[str, NameMapping], events: list) -> str:
     kind = widget.widget_kind
     title = widget.title
@@ -143,11 +156,11 @@ def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dic
         history = snapshot_service.get_state().history["power"]
         return spark_chart(
             title,
-            "Recent backend sample history.",
+            "Live output, consumption, and installed capacity.",
             [
-                {"label": "Production", "values": [point["production"] for point in history], "color": "#50d6c2"},
-                {"label": "Consumption", "values": [point["consumption"] for point in history], "color": "#ffb14d"},
-                {"label": "Capacity", "values": [point["capacity"] for point in history], "color": "#78b7ff"},
+                {"label": "Output", "values": [point["production"] for point in history], "color": "#89dceb", "fill": "#89dceb18"},
+                {"label": "Consumption", "values": [point["consumption"] for point in history], "color": "#fab387", "fill": "#fab38716"},
+                {"label": "Capacity", "values": [point["capacity"] for point in history], "color": "#b4befe", "fill": "#b4befe12"},
             ],
             formatter=format_power,
         )
@@ -160,7 +173,7 @@ def widget_html(widget: DashboardWidget, snapshot: dict[str, Any], mappings: dic
                 {
                     "label": entry.get("Name", "Item"),
                     "value": float(entry.get("CurrentProd", 0) or 0),
-                    "detail": f'{entry.get("Type", "")} | max {format_rate(entry.get("MaxProd", 0) or 0)}',
+                    "detail": production_detail(entry),
                 }
                 for entry in items[:7]
             ],
@@ -489,17 +502,25 @@ async def main_page() -> None:
             data = state.data
             info = summary(data)
             session_info = data.get("session_info") or {}
+            power_margin = info["power_margin"]
             connection_tone = tone("ok" if state.status == "online" else "warn" if state.status == "idle" else "error")
+            balance_tone = tone("error" if power_margin < 0 else "warn" if power_margin < 400 else "ok")
+            balance_copy = (
+                f"Consumption is ahead by {format_power(abs(power_margin))}."
+                if power_margin < 0
+                else f"{format_power(info['power_production'])} output / {format_power(info['power_consumption'])} consumption"
+            )
             ui.html(
                 f'<section class="frm-hero">'
-                f'<span class="frm-eyebrow">FRM Forge</span>'
-                f'<div class="frm-title">Container-hosted control room for your factory.</div>'
-                f'<div class="frm-muted" style="max-width:840px">Backend-managed FRM connectivity, SQLite persistence, server-side schedules, friendly name mappings, and dashboards that survive reloads and redeploys.</div>'
+                f'<span class="frm-eyebrow">SCC // FRM</span>'
+                f'<div class="frm-title">Statisfactory Control Center</div>'
+                f'<div class="frm-muted" style="max-width:840px">Live output, consumption, switches, automations, and field positions in one clean control room.</div>'
                 f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><span class="frm-status {connection_tone}">{escape(state.status)} {escape(state.last_error or "")}</span>'
-                f'<span class="frm-chip">Last sync {escape(state.last_refresh_at.isoformat(timespec="seconds") if state.last_refresh_at else "never")}</span></div>'
+                f'<span class="frm-chip">Last sync {escape(state.last_refresh_at.isoformat(timespec="seconds") if state.last_refresh_at else "never")}</span>'
+                f'<span class="frm-status {balance_tone}">{("Deficit" if power_margin < 0 else "Surplus")} {escape(format_power(abs(power_margin)))}</span></div>'
                 f'<div class="frm-stat-grid" style="margin-top:24px">'
                 f'<div class="frm-stat"><div class="frm-stat-label">Session</div><div class="frm-stat-value">{escape(session_info.get("SessionName", "No session"))}</div><div class="frm-muted">{("Day" if session_info.get("IsDay") else "Night") if session_info else "Offline"}</div></div>'
-                f'<div class="frm-stat"><div class="frm-stat-label">Power Margin</div><div class="frm-stat-value">{format_power(info["power_production"] - info["power_consumption"])}</div><div class="frm-muted">{format_power(info["power_production"])} produced / {format_power(info["power_consumption"])} consumed</div></div>'
+                f'<div class="frm-stat"><div class="frm-stat-label">Power Balance</div><div class="frm-stat-value">{format_power(power_margin)}</div><div class="frm-muted">{escape(balance_copy)}</div></div>'
                 f'<div class="frm-stat"><div class="frm-stat-label">Factory Utilization</div><div class="frm-stat-value">{format_percent(info["avg_utilization"])}</div><div class="frm-muted">{info["producing_factories"]} producing, {info["paused_factories"]} paused</div></div>'
                 f'<div class="frm-stat"><div class="frm-stat-label">Operators</div><div class="frm-stat-value">{info["active_players"]}/{len(data.get("players", []))}</div><div class="frm-muted">{len(data.get("switches", []))} switches tracked</div></div>'
                 f'</div></section>'
@@ -530,12 +551,12 @@ async def main_page() -> None:
                         with ui.row().classes("w-full gap-4 items-start"):
                             ui.html(
                                 spark_chart(
-                                    "Grid Drift",
-                                    "Recent power production, consumption, and capacity snapshots.",
+                                    "Power Balance",
+                                    "Live output, consumption, and installed capacity from FRM.",
                                     [
-                                        {"label": "Production", "values": [point["production"] for point in state.history["power"]], "color": "#50d6c2"},
-                                        {"label": "Consumption", "values": [point["consumption"] for point in state.history["power"]], "color": "#ffb14d"},
-                                        {"label": "Capacity", "values": [point["capacity"] for point in state.history["power"]], "color": "#78b7ff"},
+                                        {"label": "Output", "values": [point["production"] for point in state.history["power"]], "color": "#89dceb", "fill": "#89dceb18"},
+                                        {"label": "Consumption", "values": [point["consumption"] for point in state.history["power"]], "color": "#fab387", "fill": "#fab38716"},
+                                        {"label": "Capacity", "values": [point["capacity"] for point in state.history["power"]], "color": "#b4befe", "fill": "#b4befe12"},
                                     ],
                                     formatter=format_power,
                                 )
@@ -550,12 +571,12 @@ async def main_page() -> None:
                             ui.html(
                                 ranked_rows(
                                     "Top Item Throughput",
-                                    "Current output per minute from FRM production stats.",
+                                    "Current item output per minute, with current versus cap called out clearly.",
                                     [
                                         {
                                             "label": item.get("Name", "Item"),
                                             "value": float(item.get("CurrentProd", 0) or 0),
-                                            "detail": f'{item.get("Type", "")} | max {format_rate(item.get("MaxProd", 0) or 0)}',
+                                            "detail": production_detail(item),
                                         }
                                         for item in production_items[:8]
                                     ],
@@ -563,7 +584,7 @@ async def main_page() -> None:
                                 )
                             ).classes("w-full lg:w-7/12")
                             ui.html(
-                                '<div class="frm-card"><div style="font-weight:700">Operations Snapshot</div>'
+                                '<div class="frm-card"><div style="font-weight:700">Live Snapshot</div>'
                                 f'<div class="frm-metric-grid" style="margin-top:12px">'
                                 f'<div class="frm-metric"><div class="frm-metric-label">Players</div><span class="frm-metric-value">{info["active_players"]}</span></div>'
                                 f'<div class="frm-metric"><div class="frm-metric-label">Switches Off</div><span class="frm-metric-value">{info["switches_off"]}</span></div>'
@@ -655,15 +676,20 @@ async def main_page() -> None:
                         key=lambda entry: float((entry.get("PowerInfo") or {}).get("PowerConsumed", 0) or 0),
                         reverse=True,
                     )
+                    balance_values = [point["production"] - point["consumption"] for point in state.history["power"]]
+                    balance_now = balance_values[-1] if balance_values else 0.0
+                    balance_color = "#f38ba8" if balance_now < 0 else "#a6e3a1"
+                    balance_caption = "Consumption is outrunning output." if balance_now < 0 else "Output is staying ahead of consumption."
                     with ui.column().classes("w-full gap-4"):
                         with ui.row().classes("w-full gap-4 items-start"):
                             ui.html(
                                 spark_chart(
-                                    "Power History",
-                                    "Recent backend power samples.",
+                                    "Grid Load",
+                                    f"Output versus consumption, with live reserve. {balance_caption}",
                                     [
-                                        {"label": "Margin", "values": [point["production"] - point["consumption"] for point in state.history["power"]], "color": "#a9f06c"},
-                                        {"label": "Capacity", "values": [point["capacity"] for point in state.history["power"]], "color": "#78b7ff"},
+                                        {"label": "Output", "values": [point["production"] for point in state.history["power"]], "color": "#89dceb", "fill": "#89dceb18"},
+                                        {"label": "Consumption", "values": [point["consumption"] for point in state.history["power"]], "color": "#fab387", "fill": "#fab38716"},
+                                        {"label": "Reserve", "values": balance_values, "color": balance_color, "fill": f"{balance_color}16"},
                                     ],
                                     formatter=format_power,
                                 )
@@ -681,19 +707,29 @@ async def main_page() -> None:
                                         for entry in consumers[:8]
                                     ],
                                     formatter=format_power,
-                                    color="#ffb14d",
+                                    color="#fab387",
                                 )
                             ).classes("w-full lg:w-5/12")
                         with ui.row().classes("w-full gap-4 items-start"):
                             for circuit in data.get("power", []):
                                 margin = float(circuit.get("PowerProduction", 0) or 0) - float(circuit.get("PowerConsumed", 0) or 0)
-                                level = "error" if circuit.get("FuseTriggered") else "warn" if margin < 200 else "ok"
+                                level = "error" if circuit.get("FuseTriggered") or margin < 0 else "warn" if margin < 200 else "ok"
+                                state_label = (
+                                    "Fuse tripped"
+                                    if circuit.get("FuseTriggered")
+                                    else "Overdraw"
+                                    if margin < 0
+                                    else "Thin margin"
+                                    if margin < 200
+                                    else "Stable"
+                                )
                                 ui.html(
                                     f'<div class="frm-card">'
-                                    f'<div style="display:flex;justify-content:space-between;gap:12px"><strong>Circuit Group {circuit.get("CircuitGroupID", 0)}</strong><span class="frm-status {tone(level)}">{("Fuse tripped" if circuit.get("FuseTriggered") else "Stable")}</span></div>'
+                                    f'<div style="display:flex;justify-content:space-between;gap:12px"><strong>Circuit Group {circuit.get("CircuitGroupID", 0)}</strong><span class="frm-status {tone(level)}">{state_label}</span></div>'
                                     f'<div class="frm-metric-grid" style="margin-top:12px">'
-                                    f'<div class="frm-metric"><div class="frm-metric-label">Production</div><span class="frm-metric-value">{format_power(circuit.get("PowerProduction", 0))}</span></div>'
+                                    f'<div class="frm-metric"><div class="frm-metric-label">Output</div><span class="frm-metric-value">{format_power(circuit.get("PowerProduction", 0))}</span></div>'
                                     f'<div class="frm-metric"><div class="frm-metric-label">Consumption</div><span class="frm-metric-value">{format_power(circuit.get("PowerConsumed", 0))}</span></div>'
+                                    f'<div class="frm-metric"><div class="frm-metric-label">Reserve</div><span class="frm-metric-value">{format_power(margin)}</span></div>'
                                     f'<div class="frm-metric"><div class="frm-metric-label">Capacity</div><span class="frm-metric-value">{format_power(circuit.get("PowerCapacity", 0))}</span></div>'
                                     f'<div class="frm-metric"><div class="frm-metric-label">Battery</div><span class="frm-metric-value">{format_percent(circuit.get("BatteryPercent", 0))}</span></div>'
                                     f'</div></div>'

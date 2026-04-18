@@ -12,7 +12,7 @@ class AppSettings(BaseSettings):
         extra="ignore",
     )
 
-    app_title: str = "FRM Forge"
+    app_title: str = "Statisfactory Control Center"
     host: str = "0.0.0.0"
     port: int = 8088
     db_url: str = "sqlite:///data/frm_forge.db"
