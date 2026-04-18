@@ -92,6 +92,8 @@ Every workflow run uploads the rendered unRAID XML as an artifact named `unraid-
 
 The template source for unRAID lives in `unraid/frm-forge.xml.tmpl` and includes the port, `/app/data` path mapping, FRM bootstrap URL/token, database URL, and timezone variables needed to start the container cleanly on Unraid.
 
+A concrete repository-specific unRAID XML is also committed at `unraid/frm-forge.xml` for direct use.
+
 ## Running Without Docker
 
 ```bash

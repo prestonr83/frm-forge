@@ -1,23 +1,23 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>FRM Forge</Name>
-  <Repository>__IMAGE__:latest</Repository>
-  <Registry>__PACKAGE_URL__</Registry>
+  <Repository>ghcr.io/prestonr83/frm-forge:latest</Repository>
+  <Registry>https://github.com/prestonr83/frm-forge/pkgs/container/frm-forge</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>__REPO_URL__/issues</Support>
-  <Project>__REPO_URL__</Project>
+  <Support>https://github.com/prestonr83/frm-forge/issues</Support>
+  <Project>https://github.com/prestonr83/frm-forge</Project>
   <Overview>FRM Forge is a reactive operations console for Ficsit Remote Monitoring (FRM).[br][br]It provides dashboards, power and factory views, a map interface, switch and machine write actions, SQLite-backed persistence, and backend automation for schedules and threshold rules.</Overview>
   <Category>GameServers:Monitoring:Tools:</Category>
   <WebUI>http://[IP]:[PORT:8088]/</WebUI>
-  <TemplateURL>__RAW_TEMPLATE_URL__</TemplateURL>
+  <TemplateURL>https://raw.githubusercontent.com/prestonr83/frm-forge/master/unraid/frm-forge.xml</TemplateURL>
   <Icon/>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
-  <DateInstalled>__DATE_INSTALLED__</DateInstalled>
+  <DateInstalled>1744997147</DateInstalled>
   <DonateText/>
   <DonateLink/>
   <DonateImg/>

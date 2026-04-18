@@ -74,6 +74,7 @@ jobs:
           mkdir -p dist/unraid
           repo_url="https://github.com/${GITHUB_REPOSITORY}"
           repo_slug_lc="${GITHUB_REPOSITORY,,}"
+          raw_template_url="https://raw.githubusercontent.com/${repo_slug_lc}/master/unraid/frm-forge.xml"
           repo_name="${GITHUB_REPOSITORY##*/}"
           repo_name_lc="${repo_name,,}"
           image="ghcr.io/${repo_slug_lc}"
@@ -84,6 +85,7 @@ jobs:
             -e "s|__IMAGE__|${image}|g" \
             -e "s|__REPO_URL__|${repo_url}|g" \
             -e "s|__PACKAGE_URL__|${package_url}|g" \
+            -e "s|__RAW_TEMPLATE_URL__|${raw_template_url}|g" \
             -e "s|__DATE_INSTALLED__|${date_installed}|g" \
             unraid/frm-forge.xml.tmpl > dist/unraid/frm-forge.xml
 
@@ -100,4 +102,3 @@ jobs:
         with:
           files: dist/unraid/frm-forge.xml
           generate_release_notes: true
-
