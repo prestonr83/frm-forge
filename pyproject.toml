@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frm-forge"
+version = "0.1.0"
+description = "Reactive FRM operations console with SQLite persistence and backend automation."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "nicegui>=3.0,<4.0",
+  "sqlalchemy>=2.0,<2.1",
+  "httpx>=0.27,<0.29",
+  "pydantic>=2.7,<3.0",
+  "pydantic-settings>=2.2,<3.0",
+  "tzdata>=2024.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["frm_forge*"]

@@ -1,0 +1,13 @@
+services:
+  frm-forge:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${FRM_FORGE_PORT:-8088}:8088"
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./data:/app/data
+

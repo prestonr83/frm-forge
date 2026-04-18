@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>FRM Forge</Name>
+  <Repository>__IMAGE__:latest</Repository>
+  <Registry>__PACKAGE_URL__</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>__REPO_URL__/issues</Support>
+  <Project>__REPO_URL__</Project>
+  <Overview>FRM Forge is a reactive operations console for Ficsit Remote Monitoring (FRM).[br][br]It provides dashboards, power and factory views, a map interface, switch and machine write actions, SQLite-backed persistence, and backend automation for schedules and threshold rules.</Overview>
+  <Category>GameServers:Monitoring:Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8088]/</WebUI>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled>__DATE_INSTALLED__</DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <DonateImg/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8088" Default="8088" Mode="tcp" Description="HTTP port for the FRM Forge web UI." Type="Port" Display="always" Required="true" Mask="false">8088</Config>
+  <Config Name="AppData" Target="/app/data" Default="/mnt/user/appdata/frm-forge" Mode="rw" Description="SQLite database and persistent FRM Forge state." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/frm-forge</Config>
+  <Config Name="FRM Base URL" Target="FRM_FORGE_BOOTSTRAP_FRM_BASE_URL" Default="" Mode="" Description="Initial FRM API base URL, for example http://tower:8080 or http://host.docker.internal:8080. This can also be changed later in the UI." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="FRM Token" Target="FRM_FORGE_BOOTSTRAP_FRM_TOKEN" Default="" Mode="" Description="Initial FRM API token for write access. This can also be changed later in the UI." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Default Schedule Timezone" Target="FRM_FORGE_BOOTSTRAP_DEFAULT_SCHEDULE_TIMEZONE" Default="America/New_York" Mode="" Description="IANA timezone used for new schedules, for example America/New_York." Type="Variable" Display="advanced" Required="false" Mask="false">America/New_York</Config>
+  <Config Name="Poll Refresh Seconds" Target="FRM_FORGE_BOOTSTRAP_REFRESH_SECONDS" Default="10" Mode="" Description="Initial FRM polling interval in seconds." Type="Variable" Display="advanced" Required="false" Mask="false">10</Config>
+  <Config Name="Automation Interval Seconds" Target="FRM_FORGE_AUTOMATION_INTERVAL_SECONDS" Default="15" Mode="" Description="How often automation rules are evaluated." Type="Variable" Display="advanced" Required="false" Mask="false">15</Config>
+  <Config Name="Database URL" Target="FRM_FORGE_DB_URL" Default="sqlite:///data/frm_forge.db" Mode="" Description="SQLAlchemy database URL. Leave this on the default SQLite path unless you know you need something else." Type="Variable" Display="advanced" Required="false" Mask="false">sqlite:///data/frm_forge.db</Config>
+  <Config Name="Container Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone. Rules using local time follow this value." Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+</Container>
